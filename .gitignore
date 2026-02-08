@@ -14,7 +14,7 @@ sessions/
 internal/agent/sessions/
 
 # Memory data
-memory/
+/memory/
 internal/agent/memory/memory
 internal/agent/memory/*.md
 
