@@ -3,7 +3,7 @@ package providers
 import (
 	"testing"
 
-	"github.com/local/picobot/internal/config"
+	"github.com/kr0nicas/picobot/internal/config"
 )
 
 func TestNewProviderFromConfig_PicksOpenAI(t *testing.T) {

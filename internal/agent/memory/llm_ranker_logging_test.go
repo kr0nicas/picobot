@@ -6,7 +6,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/local/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/providers"
 )
 
 // provider that returns a simple content response

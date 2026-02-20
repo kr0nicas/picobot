@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/local/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/chat"
 )
 
 func TestStartTelegramWithBase(t *testing.T) {
@@ -47,7 +47,7 @@ func TestStartTelegramWithBase(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := StartTelegramWithBase(ctx, b, token, base, nil); err != nil {
+	if err := StartTelegramWithBase(ctx, b, token, base, []string{"123"}); err != nil {
 		t.Fatalf("StartTelegramWithBase failed: %v", err)
 	}
 

@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/local/picobot/internal/agent/memory"
-	"github.com/local/picobot/internal/agent/skills"
-	"github.com/local/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/agent/memory"
+	"github.com/kr0nicas/picobot/internal/agent/skills"
+	"github.com/kr0nicas/picobot/internal/providers"
 )
 
 // ContextBuilder builds messages for the LLM from session history and current message.

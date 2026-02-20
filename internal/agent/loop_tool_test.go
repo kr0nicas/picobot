@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/local/picobot/internal/chat"
-	"github.com/local/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/providers"
 )
 
 // Fake provider that returns a tool call on first chat, then returns a final message on second chat.

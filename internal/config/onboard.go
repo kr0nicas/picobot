@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/local/picobot/embeds"
+	"github.com/kr0nicas/picobot/embeds"
 )
 
 // DefaultConfig returns a minimal default Config with sensible defaults.

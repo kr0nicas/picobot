@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/local/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/chat"
 )
 
 // StartHeartbeat starts a periodic check that reads HEARTBEAT.md and pushes

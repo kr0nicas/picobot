@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/local/picobot/internal/cron"
+	"github.com/kr0nicas/picobot/internal/cron"
 )
 
 // CronTool schedules delayed/recurring tasks via the cron scheduler.

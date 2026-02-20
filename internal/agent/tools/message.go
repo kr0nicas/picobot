@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/local/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/chat"
 )
 
 // MessageTool sends messages to a channel via the chat Hub.

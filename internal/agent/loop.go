@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/local/picobot/internal/agent/memory"
-	"github.com/local/picobot/internal/agent/tools"
-	"github.com/local/picobot/internal/chat"
-	"github.com/local/picobot/internal/cron"
-	"github.com/local/picobot/internal/providers"
-	"github.com/local/picobot/internal/session"
+	"github.com/kr0nicas/picobot/internal/agent/memory"
+	"github.com/kr0nicas/picobot/internal/agent/tools"
+	"github.com/kr0nicas/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/cron"
+	"github.com/kr0nicas/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/session"
 )
 
 var rememberRE = regexp.MustCompile(`(?i)^remember(?:\s+to)?\s+(.+)$`)
@@ -55,7 +55,7 @@ func NewAgentLoop(b *chat.Hub, provider providers.LLMProvider, model string, max
 	}
 	reg.Register(fsTool)
 
-	reg.Register(tools.NewExecTool(60))
+	reg.Register(tools.NewExecToolWithWorkspace(60, workspace))
 	reg.Register(tools.NewWebTool())
 	reg.Register(tools.NewSpawnTool())
 	if scheduler != nil {

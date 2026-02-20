@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/local/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/providers"
 )
 
 // Tool is the interface for tools callable by the agent.

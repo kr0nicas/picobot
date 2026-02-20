@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/local/picobot/internal/agent/memory"
+	"github.com/kr0nicas/picobot/internal/agent/memory"
 )
 
 func TestBuildMessagesIncludesMemories(t *testing.T) {

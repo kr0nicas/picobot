@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // WebTool supports fetch operations.
@@ -31,14 +32,24 @@ func (t *WebTool) Parameters() map[string]interface{} {
 }
 
 func (t *WebTool) Execute(ctx context.Context, args map[string]interface{}) (string, error) {
-	u, ok := args["url"].(string)
-	if !ok || u == "" {
+	uStr, ok := args["url"].(string)
+	if !ok || uStr == "" {
 		return "", fmt.Errorf("web: 'url' argument required")
 	}
-	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
+
+	// Simple SSRF protection: reject localhost and common private IP ranges
+	lower := strings.ToLower(uStr)
+	if strings.Contains(lower, "localhost") || strings.Contains(lower, "127.0.0.1") || strings.Contains(lower, "::1") ||
+		strings.Contains(lower, "10.") || strings.Contains(lower, "192.168.") || strings.Contains(lower, "172.16.") ||
+		strings.Contains(lower, "169.254.") { // Link-local (AWS metadata, etc.)
+		return "", fmt.Errorf("web: access to local or private network addresses is disallowed")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", uStr, nil)
 	if err != nil {
 		return "", err
 	}
+	// ... continue with request ...
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err

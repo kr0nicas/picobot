@@ -1,4 +1,4 @@
-module github.com/local/picobot
+module github.com/kr0nicas/picobot
 
 go 1.26
 

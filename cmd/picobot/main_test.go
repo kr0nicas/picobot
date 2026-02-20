@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/local/picobot/internal/agent/memory"
-	"github.com/local/picobot/internal/config"
+	"github.com/kr0nicas/picobot/internal/agent/memory"
+	"github.com/kr0nicas/picobot/internal/config"
 )
 
 func TestMemoryCLI_ReadAppendWriteRecent(t *testing.T) {

@@ -15,14 +15,14 @@ import (
 
 	"log"
 
-	"github.com/local/picobot/internal/agent"
-	"github.com/local/picobot/internal/agent/memory"
-	"github.com/local/picobot/internal/channels"
-	"github.com/local/picobot/internal/chat"
-	"github.com/local/picobot/internal/config"
-	"github.com/local/picobot/internal/cron"
-	"github.com/local/picobot/internal/heartbeat"
-	"github.com/local/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/agent"
+	"github.com/kr0nicas/picobot/internal/agent/memory"
+	"github.com/kr0nicas/picobot/internal/channels"
+	"github.com/kr0nicas/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/config"
+	"github.com/kr0nicas/picobot/internal/cron"
+	"github.com/kr0nicas/picobot/internal/heartbeat"
+	"github.com/kr0nicas/picobot/internal/providers"
 )
 
 const version = "0.1.0"

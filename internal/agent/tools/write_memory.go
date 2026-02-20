@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/local/picobot/internal/agent/memory"
+	"github.com/kr0nicas/picobot/internal/agent/memory"
 )
 
 // WriteMemoryTool writes to the agent's memory (today's note or long-term MEMORY.md)

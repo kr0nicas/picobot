@@ -61,6 +61,18 @@ var dangerous = map[string]struct{}{
 	"mkfs":     {},
 	"shutdown": {},
 	"reboot":   {},
+	"bash":     {},
+	"sh":       {},
+	"zsh":      {},
+	"python":   {},
+	"python3":  {},
+	"perl":     {},
+	"ruby":     {},
+	"nc":       {},
+	"netcat":   {},
+	"nmap":     {},
+	"curl":     {},
+	"wget":     {},
 }
 
 func isDangerousProg(prog string) bool {
@@ -71,8 +83,19 @@ func isDangerousProg(prog string) bool {
 }
 
 func hasUnsafeArg(s string) bool {
-	if strings.HasPrefix(s, "/") || strings.HasPrefix(s, "~") || strings.Contains(s, "..") {
+	// A more aggressive check: reject any arg containing path separators,
+	// home expansion or parent directory references anywhere.
+	// We also reject shell characters that could be used for chaining.
+	if strings.Contains(s, "/") || strings.Contains(s, "..") || strings.Contains(s, "~") {
 		return true
+	}
+	// Reject common shell meta-characters that might bypass the array-only restriction
+	// if the binary itself invokes a shell (e.g. some scripts).
+	meta := []string{";", "&", "|", ">", "<", "$", "`"}
+	for _, m := range meta {
+		if strings.Contains(s, m) {
+			return true
+		}
 	}
 	return false
 }

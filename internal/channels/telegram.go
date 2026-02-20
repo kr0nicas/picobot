@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/local/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/chat"
 )
 
 // StartTelegram is a convenience wrapper that uses the real polling implementation
@@ -96,12 +96,15 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 				if m.From != nil {
 					fromID = strconv.FormatInt(m.From.ID, 10)
 				}
-				// Enforce allowFrom: if the list is non-empty, reject unknown senders.
-				if len(allowed) > 0 {
-					if _, ok := allowed[fromID]; !ok {
-						log.Printf("telegram: dropping message from unauthorized user %s", fromID)
-						continue
-					}
+				// Enforce allowFrom: if the list is empty, we drop all messages for security
+				// because the bot has access to powerful tools.
+				if len(allowed) == 0 {
+					log.Printf("telegram: dropping message from user %s: no authorized users configured in allowFrom", fromID)
+					continue
+				}
+				if _, ok := allowed[fromID]; !ok {
+					log.Printf("telegram: dropping message from unauthorized user %s", fromID)
+					continue
 				}
 				chatID := strconv.FormatInt(m.Chat.ID, 10)
 				hub.In <- chat.Inbound{

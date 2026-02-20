@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/local/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/providers"
 )
 
 func TestLLMRankerWithOpenAIFunctionCall(t *testing.T) {

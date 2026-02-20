@@ -1,6 +1,6 @@
 package providers
 
-import "github.com/local/picobot/internal/config"
+import "github.com/kr0nicas/picobot/internal/config"
 
 // NewProviderFromConfig creates a provider based on the configuration.
 // Simple rules (v0):

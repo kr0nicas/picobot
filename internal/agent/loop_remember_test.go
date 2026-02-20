@@ -7,8 +7,8 @@ import (
 
 	"strings"
 
-	"github.com/local/picobot/internal/chat"
-	"github.com/local/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/providers"
 )
 
 // Provider that fails the test if called (ensures remember shortcut skips provider)

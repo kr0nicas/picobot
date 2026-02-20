@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/local/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/chat"
 )
 
 func TestMessageToolPublishesOutbound(t *testing.T) {

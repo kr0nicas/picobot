@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/local/picobot/internal/agent/memory"
-	"github.com/local/picobot/internal/agent/tools"
-	"github.com/local/picobot/internal/chat"
-	"github.com/local/picobot/internal/providers"
+	"github.com/kr0nicas/picobot/internal/agent/memory"
+	"github.com/kr0nicas/picobot/internal/agent/tools"
+	"github.com/kr0nicas/picobot/internal/chat"
+	"github.com/kr0nicas/picobot/internal/providers"
 )
 
 // provider that returns a tool call first, then a final assistant message on second call
