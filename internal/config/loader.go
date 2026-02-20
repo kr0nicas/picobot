@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,15 +35,18 @@ func LoadConfig() (Config, error) {
 
 	// Environment variable overrides for security and docker flexibility (Supports GIO_ and PICOBOT_ prefixes)
 	// LLM API Key
-	llmKey := os.Getenv("GIO_LLM_API_KEY")
+	llmKey := strings.TrimSpace(os.Getenv("GIO_LLM_API_KEY"))
 	if llmKey == "" {
-		llmKey = os.Getenv("PICOBOT_LLM_API_KEY")
+		llmKey = strings.TrimSpace(os.Getenv("PICOBOT_LLM_API_KEY"))
 	}
 	if llmKey == "" {
-		llmKey = os.Getenv("OPENAI_API_KEY")
+		llmKey = strings.TrimSpace(os.Getenv("OPENAI_API_KEY"))
 	}
 
 	if llmKey != "" {
+		if strings.HasSuffix(llmKey, "...") {
+			log.Printf("WARNING: LLM API Key seems to be truncated (ends with '...')")
+		}
 		if cfg.Providers.OpenAI == nil {
 			cfg.Providers.OpenAI = &ProviderConfig{}
 		}
@@ -50,12 +54,12 @@ func LoadConfig() (Config, error) {
 	}
 
 	// LLM API Base (for Google Gemini or local Ollama)
-	llmBase := os.Getenv("GIO_LLM_API_BASE")
+	llmBase := strings.TrimSpace(os.Getenv("GIO_LLM_API_BASE"))
 	if llmBase == "" {
-		llmBase = os.Getenv("PICOBOT_LLM_API_BASE")
+		llmBase = strings.TrimSpace(os.Getenv("PICOBOT_LLM_API_BASE"))
 	}
 	if llmBase == "" {
-		llmBase = os.Getenv("OPENAI_API_BASE")
+		llmBase = strings.TrimSpace(os.Getenv("OPENAI_API_BASE"))
 	}
 	if llmBase != "" {
 		if cfg.Providers.OpenAI == nil {
@@ -65,24 +69,24 @@ func LoadConfig() (Config, error) {
 	}
 
 	// LLM Model
-	model := os.Getenv("GIO_LLM_MODEL")
+	model := strings.TrimSpace(os.Getenv("GIO_LLM_MODEL"))
 	if model == "" {
-		model = os.Getenv("PICOBOT_LLM_MODEL")
+		model = strings.TrimSpace(os.Getenv("PICOBOT_LLM_MODEL"))
 	}
 	if model == "" {
-		model = os.Getenv("PICOBOT_MODEL")
+		model = strings.TrimSpace(os.Getenv("PICOBOT_MODEL"))
 	}
 	if model != "" {
 		cfg.Agents.Defaults.Model = model
 	}
 
 	// Telegram
-	token := os.Getenv("GIO_TELEGRAM_TOKEN")
+	token := strings.TrimSpace(os.Getenv("GIO_TELEGRAM_TOKEN"))
 	if token == "" {
-		token = os.Getenv("PICOBOT_TELEGRAM_TOKEN")
+		token = strings.TrimSpace(os.Getenv("PICOBOT_TELEGRAM_TOKEN"))
 	}
 	if token == "" {
-		token = os.Getenv("PICOBOT_GATEWAY_TELEGRAM_TOKEN")
+		token = strings.TrimSpace(os.Getenv("PICOBOT_GATEWAY_TELEGRAM_TOKEN"))
 	}
 	if token != "" {
 		cfg.Channels.Telegram.Token = token
@@ -90,12 +94,12 @@ func LoadConfig() (Config, error) {
 	}
 
 	// Allowed Users
-	allowed := os.Getenv("GIO_TELEGRAM_ALLOWED_USERS")
+	allowed := strings.TrimSpace(os.Getenv("GIO_TELEGRAM_ALLOWED_USERS"))
 	if allowed == "" {
-		allowed = os.Getenv("PICOBOT_TELEGRAM_ALLOWED_USERS")
+		allowed = strings.TrimSpace(os.Getenv("PICOBOT_TELEGRAM_ALLOWED_USERS"))
 	}
 	if allowed == "" {
-		allowed = os.Getenv("TELEGRAM_ALLOW_FROM")
+		allowed = strings.TrimSpace(os.Getenv("TELEGRAM_ALLOW_FROM"))
 	}
 	if allowed != "" {
 		cfg.Channels.Telegram.AllowFrom = strings.Split(allowed, ",")
