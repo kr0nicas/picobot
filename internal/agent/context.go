@@ -29,10 +29,15 @@ func NewContextBuilder(workspace string, r memory.Ranker, topK int) *ContextBuil
 	}
 }
 
+const MasterInstruction = `You are Picobot, a security-hardened, high-performance agentic AI. 
+Your core directive is to assist the user with technical tasks while maintaining strict operational security.
+You are expert in Go, Docker, and Linux systems.
+You speak clearly, efficiently, and always prioritize correctness and safety over verbosity.`
+
 func (cb *ContextBuilder) BuildMessages(history []string, currentMessage string, channel, chatID string, memoryContext string, memories []memory.MemoryItem) []providers.Message {
 	msgs := make([]providers.Message, 0, len(history)+8)
-	// system prompt
-	msgs = append(msgs, providers.Message{Role: "system", Content: "You are Picobot, a helpful assistant."})
+	// system prompt - Master Instruction is immutable
+	msgs = append(msgs, providers.Message{Role: "system", Content: MasterInstruction})
 
 	// Load workspace bootstrap files (SOUL.md, AGENTS.md, USER.md, TOOLS.md)
 	// These define the agent's personality, instructions, and available tools documentation.
