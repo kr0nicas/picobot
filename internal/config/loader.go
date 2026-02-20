@@ -32,11 +32,11 @@ func LoadConfig() (Config, error) {
 		f.Close()
 	}
 
-	// Environment variable overrides for security and docker flexibility
-	// LLM API Key (support multiple naming conventions)
-	llmKey := os.Getenv("PICOBOT_LLM_API_KEY")
+	// Environment variable overrides for security and docker flexibility (Supports GIO_ and PICOBOT_ prefixes)
+	// LLM API Key
+	llmKey := os.Getenv("GIO_LLM_API_KEY")
 	if llmKey == "" {
-		llmKey = os.Getenv("PICOBOT_OPENAI_API_KEY")
+		llmKey = os.Getenv("PICOBOT_LLM_API_KEY")
 	}
 	if llmKey == "" {
 		llmKey = os.Getenv("OPENAI_API_KEY")
@@ -50,7 +50,10 @@ func LoadConfig() (Config, error) {
 	}
 
 	// LLM API Base (for Google Gemini or local Ollama)
-	llmBase := os.Getenv("PICOBOT_LLM_API_BASE")
+	llmBase := os.Getenv("GIO_LLM_API_BASE")
+	if llmBase == "" {
+		llmBase = os.Getenv("PICOBOT_LLM_API_BASE")
+	}
 	if llmBase == "" {
 		llmBase = os.Getenv("OPENAI_API_BASE")
 	}
@@ -58,26 +61,43 @@ func LoadConfig() (Config, error) {
 		if cfg.Providers.OpenAI == nil {
 			cfg.Providers.OpenAI = &ProviderConfig{}
 		}
-		cfg.Providers.OpenAI.APIBase = llmBase
+		cfg.Providers.OpenAI.APIBase = strings.TrimRight(llmBase, "/")
 	}
 
 	// LLM Model
-	if model := os.Getenv("PICOBOT_LLM_MODEL"); model != "" {
-		cfg.Agents.Defaults.Model = model
-	} else if model := os.Getenv("PICOBOT_MODEL"); model != "" {
+	model := os.Getenv("GIO_LLM_MODEL")
+	if model == "" {
+		model = os.Getenv("PICOBOT_LLM_MODEL")
+	}
+	if model == "" {
+		model = os.Getenv("PICOBOT_MODEL")
+	}
+	if model != "" {
 		cfg.Agents.Defaults.Model = model
 	}
 
 	// Telegram
-	if token := os.Getenv("PICOBOT_TELEGRAM_TOKEN"); token != "" {
+	token := os.Getenv("GIO_TELEGRAM_TOKEN")
+	if token == "" {
+		token = os.Getenv("PICOBOT_TELEGRAM_TOKEN")
+	}
+	if token == "" {
+		token = os.Getenv("PICOBOT_GATEWAY_TELEGRAM_TOKEN")
+	}
+	if token != "" {
 		cfg.Channels.Telegram.Token = token
-	} else if token := os.Getenv("PICOBOT_GATEWAY_TELEGRAM_TOKEN"); token != "" {
-		cfg.Channels.Telegram.Token = token
+		cfg.Channels.Telegram.Enabled = true // Auto-enable if token is provided via ENV
 	}
 
-	if allowed := os.Getenv("PICOBOT_TELEGRAM_ALLOWED_USERS"); allowed != "" {
-		cfg.Channels.Telegram.AllowFrom = strings.Split(allowed, ",")
-	} else if allowed := os.Getenv("TELEGRAM_ALLOW_FROM"); allowed != "" {
+	// Allowed Users
+	allowed := os.Getenv("GIO_TELEGRAM_ALLOWED_USERS")
+	if allowed == "" {
+		allowed = os.Getenv("PICOBOT_TELEGRAM_ALLOWED_USERS")
+	}
+	if allowed == "" {
+		allowed = os.Getenv("TELEGRAM_ALLOW_FROM")
+	}
+	if allowed != "" {
 		cfg.Channels.Telegram.AllowFrom = strings.Split(allowed, ",")
 	}
 
