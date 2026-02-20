@@ -181,7 +181,9 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 				// skip unparseable tool calls
 				continue
 			}
-			tcs = append(tcs, ToolCall{ID: tc.ID, Name: tc.Function.Name, Arguments: parsed})
+			// Sanitize tool name: models sometimes hallucinate prefixes like "default_api:" or "functions:"
+			name := sanitizeToolName(tc.Function.Name)
+			tcs = append(tcs, ToolCall{ID: tc.ID, Name: name, Arguments: parsed})
 		}
 		if len(tcs) > 0 {
 			return LLMResponse{Content: strings.TrimSpace(msg.Content), HasToolCalls: true, ToolCalls: tcs}, nil
@@ -190,4 +192,15 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 
 	// No tool calls
 	return LLMResponse{Content: strings.TrimSpace(msg.Content), HasToolCalls: false}, nil
+}
+
+func sanitizeToolName(name string) string {
+	// Remove common prefixes from hallucinating models
+	prefixes := []string{"default_api:", "functions:", "tools:"}
+	for _, p := range prefixes {
+		if strings.HasPrefix(name, p) {
+			return strings.TrimPrefix(name, p)
+		}
+	}
+	return name
 }
