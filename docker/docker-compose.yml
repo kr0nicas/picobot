@@ -16,7 +16,7 @@ services:
       # LLM Config (Google Gemini / OpenAI compatible)
       - GIO_LLM_API_KEY=${GIO_LLM_API_KEY}
       - GIO_LLM_API_BASE=${GIO_LLM_API_BASE:-https://generativelanguage.googleapis.com/v1beta/openai}
-      - GIO_LLM_MODEL=${GIO_LLM_MODEL:-gemini-1.5-flash}
+      - GIO_LLM_MODEL=${GIO_LLM_MODEL:-gemini-3-flash-preview}
 
       # Telegram Config
       - GIO_TELEGRAM_TOKEN=${GIO_TELEGRAM_TOKEN}

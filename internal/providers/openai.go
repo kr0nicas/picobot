@@ -70,8 +70,9 @@ type toolCallJSON struct {
 }
 
 type toolCallFunctionJSON struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
+	Name             string `json:"name"`
+	Arguments        string `json:"arguments"`
+	ThoughtSignature string `json:"thought_signature,omitempty"` // For Gemini 3
 }
 
 type messageResponseJSON struct {
@@ -105,8 +106,9 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 				ID:   tc.ID,
 				Type: "function",
 				Function: toolCallFunctionJSON{
-					Name:      tc.Name,
-					Arguments: string(argsBytes),
+					Name:             tc.Name,
+					Arguments:        string(argsBytes),
+					ThoughtSignature: tc.ThoughtSignature,
 				},
 			})
 		}
@@ -183,7 +185,12 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 			}
 			// Sanitize tool name: models sometimes hallucinate prefixes like "default_api:" or "functions:"
 			name := sanitizeToolName(tc.Function.Name)
-			tcs = append(tcs, ToolCall{ID: tc.ID, Name: name, Arguments: parsed})
+			tcs = append(tcs, ToolCall{
+				ID:               tc.ID,
+				Name:             name,
+				Arguments:        parsed,
+				ThoughtSignature: tc.Function.ThoughtSignature,
+			})
 		}
 		if len(tcs) > 0 {
 			return LLMResponse{Content: strings.TrimSpace(msg.Content), HasToolCalls: true, ToolCalls: tcs}, nil

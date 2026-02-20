@@ -19,9 +19,10 @@ type ToolDefinition struct {
 
 // ToolCall represents a request from the LLM to invoke a tool.
 type ToolCall struct {
-	ID        string                 `json:"id"`
-	Name      string                 `json:"name"`
-	Arguments map[string]interface{} `json:"arguments"`
+	ID               string                 `json:"id"`
+	Name             string                 `json:"name"`
+	Arguments        map[string]interface{} `json:"arguments"`
+	ThoughtSignature string                 `json:"thought_signature,omitempty"` // For Google Gemini 3 compatibility
 }
 
 // LLMResponse is a normalized response from a provider.
