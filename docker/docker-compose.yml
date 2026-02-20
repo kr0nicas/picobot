@@ -1,21 +1,26 @@
 services:
-  picobot:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    container_name: picobot
+  gio:
+    image: ghcr.io/kr0nicas/picobot:latest
+    container_name: gio_agente
     restart: unless-stopped
-    environment:
-      # Required: OpenAI-compatible API key (works with OpenRouter, OpenAI, etc.)
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-or-v1-REPLACE_ME}
-      # Optional: OpenAI-compatible API base URL
-      - OPENAI_API_BASE=${OPENAI_API_BASE:-https://openrouter.ai/api/v1}
-      # Required: The LLM model to use
-      - PICOBOT_MODEL=${PICOBOT_MODEL:-google/gemini-2.5-flash}
-      # Optional: Telegram bot token from @BotFather
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-      # Optional: Comma-separated Telegram user IDs allowed to chat
-      - TELEGRAM_ALLOW_FROM=${TELEGRAM_ALLOW_FROM:-}
+    # CentOS/Linux permission fix
+    user: "${UID}:${GID}"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
     volumes:
-      # Persist config, workspace, memory, and skills across restarts
-      - ./picobot-data:/home/picobot/.picobot
+      - ./data:/home/picobot/.picobot
+    environment:
+      # LLM Config (Google Gemini via OpenAI-compatible endpoint)
+      - PICOBOT_LLM_API_KEY=${PICOBOT_LLM_API_KEY}
+      - PICOBOT_LLM_MODEL=${PICOBOT_LLM_MODEL:-gemini-1.5-flash}
+      - PICOBOT_LLM_API_BASE=https://generativelanguage.googleapis.com/v1beta/openai
+
+      # Telegram Config
+      - PICOBOT_TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - PICOBOT_TELEGRAM_ALLOWED_USERS=${MY_TELEGRAM_ID}
+
+      # Persistence & Home
+      - PICOBOT_HOME=/home/picobot/.picobot
