@@ -14,21 +14,26 @@ import (
 
 // OpenAIProvider calls an OpenAI-compatible API (OpenAI, OpenRouter, or similar).
 type OpenAIProvider struct {
-	APIKey  string
-	APIBase string // e.g. https://api.openai.com/v1 or https://openrouter.ai/api/v1
-	Client  *http.Client
+	APIKey    string
+	APIBase   string // e.g. https://api.openai.com/v1 or https://openrouter.ai/api/v1
+	MaxTokens int
+	Client    *http.Client
 }
 
-func NewOpenAIProvider(apiKey, apiBase string, timeoutSecs int) *OpenAIProvider {
+func NewOpenAIProvider(apiKey, apiBase string, timeoutSecs, maxTokens int) *OpenAIProvider {
 	if apiBase == "" {
-		apiBase = "https://api.openai.com/v1" // sensible default; can be overridden
+		apiBase = "https://api.openai.com/v1"
 	}
 	if timeoutSecs <= 0 {
-		timeoutSecs = 60 // default 60 seconds
+		timeoutSecs = 60
+	}
+	if maxTokens <= 0 {
+		maxTokens = 4096
 	}
 	return &OpenAIProvider{
-		APIKey:  apiKey,
-		APIBase: strings.TrimRight(apiBase, "/"),
+		APIKey:    apiKey,
+		APIBase:   strings.TrimRight(apiBase, "/"),
+		MaxTokens: maxTokens,
 		Client: &http.Client{
 			Timeout: time.Duration(timeoutSecs) * time.Second,
 		},
@@ -42,6 +47,7 @@ type chatRequest struct {
 	Model    string        `json:"model"`
 	Messages []messageJSON `json:"messages"`
 	Tools    []toolWrapper `json:"tools,omitempty"`
+	MaxTokens int          `json:"max_tokens,omitempty"`
 }
 
 // toolWrapper is the OpenAI tools array element: {"type": "function", "function": {...}}
@@ -96,7 +102,7 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 		model = p.GetDefaultModel()
 	}
 
-	reqBody := chatRequest{Model: model, Messages: make([]messageJSON, 0, len(messages))}
+	reqBody := chatRequest{Model: model, MaxTokens: p.MaxTokens, Messages: make([]messageJSON, 0, len(messages))}
 	for _, m := range messages {
 		mj := messageJSON{Role: m.Role, Content: m.Content, ToolCallID: m.ToolCallID}
 		// Convert provider ToolCall to JSON-serializable toolCallJSON
@@ -139,15 +145,18 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 		return LLMResponse{}, err
 	}
 
-	url := fmt.Sprintf("%s/chat/completions", p.APIBase)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(b)))
-	if err != nil {
-		return LLMResponse{}, err
+	apiURL := fmt.Sprintf("%s/chat/completions", p.APIBase)
+	buildReq := func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, "POST", apiURL, strings.NewReader(string(b)))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+p.APIKey)
+		return req, nil
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.APIKey)
 
-	resp, err := p.Client.Do(req)
+	resp, err := doWithRetry(ctx, p.Client, buildReq)
 	if err != nil {
 		return LLMResponse{}, err
 	}
@@ -155,7 +164,7 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		// attempt to read response body for more details (do not expose API key)
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		body := strings.TrimSpace(string(bodyBytes))
 		log.Printf("OpenAI API non-2xx: %s body=%q", resp.Status, body)
 		if body == "" {

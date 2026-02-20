@@ -32,7 +32,8 @@ type TelegramConfig struct {
 }
 
 type ProvidersConfig struct {
-	OpenAI *ProviderConfig `json:"openai,omitempty"`
+	OpenAI    *ProviderConfig `json:"openai,omitempty"`
+	Anthropic *ProviderConfig `json:"anthropic,omitempty"`
 }
 
 type ProviderConfig struct {

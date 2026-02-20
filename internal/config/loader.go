@@ -53,6 +53,21 @@ func LoadConfig() (Config, error) {
 		cfg.Providers.OpenAI.APIKey = llmKey
 	}
 
+	// Anthropic API Key
+	anthropicKey := strings.TrimSpace(os.Getenv("GIO_ANTHROPIC_API_KEY"))
+	if anthropicKey == "" {
+		anthropicKey = strings.TrimSpace(os.Getenv("PICOBOT_ANTHROPIC_API_KEY"))
+	}
+	if anthropicKey == "" {
+		anthropicKey = strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY"))
+	}
+	if anthropicKey != "" {
+		if cfg.Providers.Anthropic == nil {
+			cfg.Providers.Anthropic = &ProviderConfig{}
+		}
+		cfg.Providers.Anthropic.APIKey = anthropicKey
+	}
+
 	// LLM API Base (for Google Gemini or local Ollama)
 	llmBase := strings.TrimSpace(os.Getenv("GIO_LLM_API_BASE"))
 	if llmBase == "" {
@@ -66,6 +81,18 @@ func LoadConfig() (Config, error) {
 			cfg.Providers.OpenAI = &ProviderConfig{}
 		}
 		cfg.Providers.OpenAI.APIBase = strings.TrimRight(llmBase, "/")
+	}
+
+	// Anthropic API Base
+	anthropicBase := strings.TrimSpace(os.Getenv("GIO_ANTHROPIC_API_BASE"))
+	if anthropicBase == "" {
+		anthropicBase = strings.TrimSpace(os.Getenv("ANTHROPIC_API_BASE"))
+	}
+	if anthropicBase != "" {
+		if cfg.Providers.Anthropic == nil {
+			cfg.Providers.Anthropic = &ProviderConfig{}
+		}
+		cfg.Providers.Anthropic.APIBase = strings.TrimRight(anthropicBase, "/")
 	}
 
 	// LLM Model
