@@ -311,8 +311,17 @@ func extractEmbeddedSkills(targetDir string) error {
 	})
 }
 
-// ResolveDefaultPaths returns absolute paths for the config and workspace based on home directory.
+// ResolveDefaultPaths returns absolute paths for the config and workspace based on home directory
+// or PICOBOT_HOME environment variable if set.
 func ResolveDefaultPaths() (cfgPath string, workspacePath string, err error) {
+	// Priority 1: PICOBOT_HOME environment variable (great for Docker)
+	if ph := os.Getenv("PICOBOT_HOME"); ph != "" {
+		cfgPath = filepath.Join(ph, "config.json")
+		workspacePath = filepath.Join(ph, "workspace")
+		return cfgPath, workspacePath, nil
+	}
+
+	// Priority 2: Standard user home directory
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", "", err

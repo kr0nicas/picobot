@@ -7,14 +7,20 @@ import (
 	"strings"
 )
 
-// LoadConfig loads config from ~/.picobot/config.json if present, then overrides
-// sensitive fields with environment variables if set.
+// LoadConfig loads config from ~/.picobot/config.json (or PICOBOT_HOME) if present,
+// then overrides sensitive fields with environment variables if set.
 func LoadConfig() (Config, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = "."
+	var path string
+	if ph := os.Getenv("PICOBOT_HOME"); ph != "" {
+		path = filepath.Join(ph, "config.json")
+	} else {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			home = "."
+		}
+		path = filepath.Join(home, ".picobot", "config.json")
 	}
-	path := filepath.Join(home, ".picobot", "config.json")
+
 	var cfg Config
 	f, err := os.Open(path)
 	if err == nil {
