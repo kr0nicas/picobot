@@ -43,6 +43,7 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 
 	// inbound polling goroutine
 	go func() {
+		log.Printf("telegram: starting inbound polling (allowFrom: %v)", allowFrom)
 		offset := int64(0)
 		for {
 			select {
@@ -59,7 +60,7 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 			resp, err := client.PostForm(u, values)
 			if err != nil {
 				log.Printf("telegram getUpdates error: %v", err)
-				time.Sleep(1 * time.Second)
+				time.Sleep(5 * time.Second) // Wait bit longer on error
 				continue
 			}
 			body, _ := io.ReadAll(resp.Body)
@@ -81,7 +82,8 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 				} `json:"result"`
 			}
 			if err := json.Unmarshal(body, &gu); err != nil {
-				log.Printf("telegram: invalid getUpdates response: %v", err)
+				log.Printf("telegram: invalid getUpdates response (len=%d): %v", len(body), err)
+				time.Sleep(2 * time.Second)
 				continue
 			}
 			for _, upd := range gu.Result {
@@ -97,7 +99,6 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 					fromID = strconv.FormatInt(m.From.ID, 10)
 				}
 				// Enforce allowFrom: if the list is empty, we drop all messages for security
-				// because the bot has access to powerful tools.
 				if len(allowed) == 0 {
 					log.Printf("telegram: dropping message from user %s: no authorized users configured in allowFrom", fromID)
 					continue
@@ -107,6 +108,7 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 					continue
 				}
 				chatID := strconv.FormatInt(m.Chat.ID, 10)
+				log.Printf("telegram: received message from %s, routing to hub", fromID)
 				hub.In <- chat.Inbound{
 					Channel:   "telegram",
 					SenderID:  fromID,
@@ -120,7 +122,8 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 
 	// outbound sender goroutine
 	go func() {
-		client := &http.Client{Timeout: 10 * time.Second}
+		log.Println("telegram: starting outbound sender")
+		client := &http.Client{Timeout: 15 * time.Second}
 		for {
 			select {
 			case <-ctx.Done():
@@ -128,9 +131,9 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 				return
 			case out := <-hub.Out:
 				if out.Channel != "telegram" {
-					// ignore messages for other channels
 					continue
 				}
+				log.Printf("telegram: sending message to chat %s", out.ChatID)
 				u := base + "/sendMessage"
 				v := url.Values{}
 				v.Set("chat_id", out.ChatID)
@@ -140,8 +143,11 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 					log.Printf("telegram sendMessage error: %v", err)
 					continue
 				}
-				io.ReadAll(resp.Body)
+				respBody, _ := io.ReadAll(resp.Body)
 				resp.Body.Close()
+				if resp.StatusCode != 200 {
+					log.Printf("telegram sendMessage non-200: %s body=%s", resp.Status, string(respBody))
+				}
 			}
 		}
 	}()
