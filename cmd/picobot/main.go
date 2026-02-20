@@ -30,14 +30,14 @@ const version = "0.1.0"
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "picobot",
-		Short: "picobot — lightweight clawbot in Go",
+		Short: "Gio — security-hardened agentic AI in Go",
 	}
 
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "version",
 		Short: "Print version",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("🤖 picobot v%s\n", version)
+			fmt.Printf("🤖 Gio v%s (powered by picobot engine)\n", version)
 		},
 	})
 
