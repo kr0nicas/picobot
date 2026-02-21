@@ -8,8 +8,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
-          cpus: '0.5'
+          memory: 1G
+          cpus: '1.0'
     volumes:
       - ./data:/home/picobot/.picobot
     environment:

@@ -37,7 +37,9 @@ RUN addgroup -S picobot && adduser -S picobot -G picobot
 
 # Picobot home directory (config + workspace live here)
 ENV PICOBOT_HOME=/home/picobot/.picobot
-RUN mkdir -p ${PICOBOT_HOME} && chown -R picobot:picobot /home/picobot
+# Allow agent to install tools in its workspace bin
+ENV PATH="/home/picobot/.picobot/bin:${PATH}"
+RUN mkdir -p ${PICOBOT_HOME}/bin && chown -R picobot:picobot /home/picobot
 
 COPY --from=builder /picobot /usr/local/bin/picobot
 RUN chmod +x /usr/local/bin/picobot
