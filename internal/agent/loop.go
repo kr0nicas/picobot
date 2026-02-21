@@ -163,7 +163,7 @@ func (a *AgentLoop) Run(ctx context.Context) {
 							res = "(tool error) " + err.Error()
 						}
 						lastToolResult = res
-						messages = append(messages, providers.Message{Role: "tool", Content: res, ToolCallID: tc.ID})
+						messages = append(messages, providers.Message{Role: "tool", Content: res, ToolCallID: tc.ID, ThoughtSignature: tc.ThoughtSignature})
 					}
 					// loop again
 					continue
@@ -248,7 +248,7 @@ func (a *AgentLoop) ProcessDirect(content string, timeout time.Duration) (string
 				result = "(tool error) " + err.Error()
 			}
 			lastToolResult = result
-			messages = append(messages, providers.Message{Role: "tool", Content: result, ToolCallID: tc.ID})
+			messages = append(messages, providers.Message{Role: "tool", Content: result, ToolCallID: tc.ID, ThoughtSignature: tc.ThoughtSignature})
 		}
 	}
 

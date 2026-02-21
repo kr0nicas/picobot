@@ -63,10 +63,11 @@ type functionDef struct {
 }
 
 type messageJSON struct {
-	Role       string         `json:"role"`
-	Content    string         `json:"content"`
-	ToolCallID string         `json:"tool_call_id,omitempty"`
-	ToolCalls  []toolCallJSON `json:"tool_calls,omitempty"`
+	Role             string         `json:"role"`
+	Content          string         `json:"content"`
+	ToolCallID       string         `json:"tool_call_id,omitempty"`
+	ThoughtSignature string         `json:"thought_signature,omitempty"` // For Gemini 3 tool results
+	ToolCalls        []toolCallJSON `json:"tool_calls,omitempty"`
 }
 
 type toolCallJSON struct {
@@ -104,7 +105,7 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 
 	reqBody := chatRequest{Model: model, MaxTokens: p.MaxTokens, Messages: make([]messageJSON, 0, len(messages))}
 	for _, m := range messages {
-		mj := messageJSON{Role: m.Role, Content: m.Content, ToolCallID: m.ToolCallID}
+		mj := messageJSON{Role: m.Role, Content: m.Content, ToolCallID: m.ToolCallID, ThoughtSignature: m.ThoughtSignature}
 		// Convert provider ToolCall to JSON-serializable toolCallJSON
 		for _, tc := range m.ToolCalls {
 			argsBytes, _ := json.Marshal(tc.Arguments)
