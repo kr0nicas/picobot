@@ -29,7 +29,7 @@ FROM alpine:3.20
 
 RUN apk add --no-cache \
     ca-certificates tzdata bash curl wget \
-    jq git openssh-client python3 \
+    jq git openssh-client python3 py3-pip py3-requests \
     bind-tools iputils iproute2 net-tools
 
 # Create non-root user
