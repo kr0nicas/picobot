@@ -32,6 +32,9 @@ RUN apk add --no-cache \
     jq git openssh-client python3 py3-pip py3-requests \
     bind-tools iputils iproute2 net-tools
 
+# Allow pip to install packages system-wide and pre-install supabase SDK
+RUN pip3 install --no-cache-dir --break-system-packages supabase
+
 # Create non-root user
 RUN addgroup -S picobot && adduser -S picobot -G picobot
 
@@ -46,6 +49,9 @@ RUN chmod +x /usr/local/bin/picobot
 
 USER picobot
 WORKDIR /home/picobot
+
+# Allow the non-root user to pip install packages at runtime
+RUN pip3 config --user set global.break-system-packages true
 
 # Run onboard on first start to create config + workspace,
 # then start the gateway. The entrypoint script handles this.
