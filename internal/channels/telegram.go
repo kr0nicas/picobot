@@ -135,22 +135,58 @@ func StartTelegramWithBase(ctx context.Context, hub *chat.Hub, token, base strin
 				}
 				log.Printf("telegram: sending message to chat %s", out.ChatID)
 				u := base + "/sendMessage"
-				v := url.Values{}
-				v.Set("chat_id", out.ChatID)
-				v.Set("text", out.Content)
-				resp, err := client.PostForm(u, v)
-				if err != nil {
-					log.Printf("telegram sendMessage error: %v", err)
-					continue
-				}
-				respBody, _ := io.ReadAll(resp.Body)
-				resp.Body.Close()
-				if resp.StatusCode != 200 {
-					log.Printf("telegram sendMessage non-200: %s body=%s", resp.Status, string(respBody))
+				chunks := splitMessage(out.Content, 4096)
+				for _, chunk := range chunks {
+					v := url.Values{}
+					v.Set("chat_id", out.ChatID)
+					v.Set("text", chunk)
+					resp, err := client.PostForm(u, v)
+					if err != nil {
+						log.Printf("telegram sendMessage error: %v", err)
+						break
+					}
+					respBody, _ := io.ReadAll(resp.Body)
+					resp.Body.Close()
+					if resp.StatusCode != 200 {
+						log.Printf("telegram sendMessage non-200: %s body=%s", resp.Status, string(respBody))
+						break
+					}
 				}
 			}
 		}
 	}()
 
 	return nil
+}
+
+// splitMessage splits text into chunks of at most maxLen characters,
+// breaking at newlines when possible to keep messages readable.
+func splitMessage(text string, maxLen int) []string {
+	if len(text) <= maxLen {
+		return []string{text}
+	}
+	var chunks []string
+	for len(text) > 0 {
+		if len(text) <= maxLen {
+			chunks = append(chunks, text)
+			break
+		}
+		// Try to split at the last newline within the limit
+		cut := maxLen
+		if idx := lastIndexByte(text[:maxLen], '\n'); idx > 0 {
+			cut = idx + 1
+		}
+		chunks = append(chunks, text[:cut])
+		text = text[cut:]
+	}
+	return chunks
+}
+
+func lastIndexByte(s string, c byte) int {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == c {
+			return i
+		}
+	}
+	return -1
 }
