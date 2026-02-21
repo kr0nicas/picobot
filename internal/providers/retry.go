@@ -2,15 +2,17 @@ package providers
 
 import (
 	"context"
+	"log"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 const (
-	maxRetries    = 3
-	baseDelay     = 500 * time.Millisecond
-	maxDelay      = 10 * time.Second
+	maxRetries = 3
+	baseDelay  = 1 * time.Second
+	maxDelay   = 30 * time.Second
 )
 
 // retryableStatusCode returns true for HTTP status codes that warrant a retry.
@@ -35,8 +37,29 @@ func backoffDelay(attempt int) time.Duration {
 	return delay
 }
 
+// retryAfterDelay parses the Retry-After header if present and returns the delay.
+// Returns 0 if not present or unparseable.
+func retryAfterDelay(resp *http.Response) time.Duration {
+	val := resp.Header.Get("Retry-After")
+	if val == "" {
+		return 0
+	}
+	// Try as seconds first
+	if secs, err := strconv.Atoi(val); err == nil && secs > 0 {
+		return time.Duration(secs) * time.Second
+	}
+	// Try as HTTP date
+	if t, err := http.ParseTime(val); err == nil {
+		delay := time.Until(t)
+		if delay > 0 {
+			return delay
+		}
+	}
+	return 0
+}
+
 // doWithRetry executes an HTTP request with retries for transient errors.
-// It returns the response only when it's a non-retryable status or retries are exhausted.
+// It respects the Retry-After header for 429 responses.
 func doWithRetry(ctx context.Context, client *http.Client, buildReq func() (*http.Request, error)) (*http.Response, error) {
 	var resp *http.Response
 	var err error
@@ -44,6 +67,13 @@ func doWithRetry(ctx context.Context, client *http.Client, buildReq func() (*htt
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
 			delay := backoffDelay(attempt - 1)
+			// For 429, prefer Retry-After header
+			if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
+				if ra := retryAfterDelay(resp); ra > 0 && ra <= 60*time.Second {
+					delay = ra
+				}
+			}
+			log.Printf("provider: retrying request (attempt %d/%d, waiting %v)", attempt, maxRetries, delay)
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()

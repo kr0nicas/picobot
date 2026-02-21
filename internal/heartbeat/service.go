@@ -35,13 +35,17 @@ func StartHeartbeat(ctx context.Context, workspace string, interval time.Duratio
 					continue
 				}
 
-				// Push heartbeat content into the agent loop for processing
+				// Non-blocking send: skip if hub is busy processing previous message
 				log.Println("heartbeat: sending tasks to agent")
-				hub.In <- chat.Inbound{
+				select {
+				case hub.In <- chat.Inbound{
 					Channel:  "heartbeat",
 					ChatID:   "system",
 					SenderID: "heartbeat",
 					Content:  "[HEARTBEAT CHECK] Review and execute any pending tasks from HEARTBEAT.md:\n\n" + content,
+				}:
+				default:
+					log.Println("heartbeat: hub busy, skipping heartbeat")
 				}
 			}
 		}
