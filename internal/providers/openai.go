@@ -63,23 +63,30 @@ type functionDef struct {
 }
 
 type messageJSON struct {
-	Role             string         `json:"role"`
-	Content          string         `json:"content"`
-	ToolCallID       string         `json:"tool_call_id,omitempty"`
-	ThoughtSignature string         `json:"thought_signature,omitempty"` // For Gemini 3 tool results
-	ToolCalls        []toolCallJSON `json:"tool_calls,omitempty"`
+	Role       string         `json:"role"`
+	Content    string         `json:"content"`
+	ToolCallID string         `json:"tool_call_id,omitempty"`
+	ToolCalls  []toolCallJSON `json:"tool_calls,omitempty"`
 }
 
 type toolCallJSON struct {
-	ID       string               `json:"id"`
-	Type     string               `json:"type"`
-	Function toolCallFunctionJSON `json:"function"`
+	ID           string                `json:"id"`
+	Type         string                `json:"type"`
+	Function     toolCallFunctionJSON  `json:"function"`
+	ExtraContent *toolCallExtraContent `json:"extra_content,omitempty"` // Gemini 3 thought signatures
+}
+
+type toolCallExtraContent struct {
+	Google *toolCallGoogle `json:"google,omitempty"`
+}
+
+type toolCallGoogle struct {
+	ThoughtSignature string `json:"thought_signature,omitempty"`
 }
 
 type toolCallFunctionJSON struct {
-	Name             string `json:"name"`
-	Arguments        string `json:"arguments"`
-	ThoughtSignature string `json:"thought_signature,omitempty"` // For Gemini 3
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 type messageResponseJSON struct {
@@ -105,19 +112,24 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 
 	reqBody := chatRequest{Model: model, MaxTokens: p.MaxTokens, Messages: make([]messageJSON, 0, len(messages))}
 	for _, m := range messages {
-		mj := messageJSON{Role: m.Role, Content: m.Content, ToolCallID: m.ToolCallID, ThoughtSignature: m.ThoughtSignature}
+		mj := messageJSON{Role: m.Role, Content: m.Content, ToolCallID: m.ToolCallID}
 		// Convert provider ToolCall to JSON-serializable toolCallJSON
 		for _, tc := range m.ToolCalls {
 			argsBytes, _ := json.Marshal(tc.Arguments)
-			mj.ToolCalls = append(mj.ToolCalls, toolCallJSON{
+			tcj := toolCallJSON{
 				ID:   tc.ID,
 				Type: "function",
 				Function: toolCallFunctionJSON{
-					Name:             tc.Name,
-					Arguments:        string(argsBytes),
-					ThoughtSignature: tc.ThoughtSignature,
+					Name:      tc.Name,
+					Arguments: string(argsBytes),
 				},
-			})
+			}
+			if tc.ThoughtSignature != "" {
+				tcj.ExtraContent = &toolCallExtraContent{
+					Google: &toolCallGoogle{ThoughtSignature: tc.ThoughtSignature},
+				}
+			}
+			mj.ToolCalls = append(mj.ToolCalls, tcj)
 		}
 		reqBody.Messages = append(reqBody.Messages, mj)
 	}
@@ -195,11 +207,15 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []Message, tools []T
 			}
 			// Sanitize tool name: models sometimes hallucinate prefixes like "default_api:" or "functions:"
 			name := sanitizeToolName(tc.Function.Name)
+			var sig string
+			if tc.ExtraContent != nil && tc.ExtraContent.Google != nil {
+				sig = tc.ExtraContent.Google.ThoughtSignature
+			}
 			tcs = append(tcs, ToolCall{
 				ID:               tc.ID,
 				Name:             name,
 				Arguments:        parsed,
-				ThoughtSignature: tc.Function.ThoughtSignature,
+				ThoughtSignature: sig,
 			})
 		}
 		if len(tcs) > 0 {

@@ -4,11 +4,10 @@ import "context"
 
 // Message represents a chat message to/from the LLM.
 type Message struct {
-	Role             string     `json:"role"` // "system" | "user" | "assistant" | "tool"
-	Content          string     `json:"content"`
-	ToolCallID       string     `json:"tool_call_id,omitempty"`        // set when Role == "tool"
-	ThoughtSignature string     `json:"thought_signature,omitempty"`   // set when Role == "tool" (Gemini 3)
-	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`          // set on assistant msgs with tool calls
+	Role       string     `json:"role"` // "system" | "user" | "assistant" | "tool"
+	Content    string     `json:"content"`
+	ToolCallID string     `json:"tool_call_id,omitempty"` // set when Role == "tool"
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`   // set on assistant msgs with tool calls
 }
 
 // ToolDefinition is a lightweight description of a tool available to the model.
