@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	maxRetries = 3
-	baseDelay  = 1 * time.Second
-	maxDelay   = 30 * time.Second
+	maxRetries    = 3
+	baseDelay     = 1 * time.Second
+	maxDelay      = 60 * time.Second
+	rateLimitBase = 5 * time.Second // longer base delay for 429
 )
 
 // retryableStatusCode returns true for HTTP status codes that warrant a retry.
@@ -67,10 +68,14 @@ func doWithRetry(ctx context.Context, client *http.Client, buildReq func() (*htt
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
 			delay := backoffDelay(attempt - 1)
-			// For 429, prefer Retry-After header
+			// For 429, use longer base delay or Retry-After header
 			if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
+				delay = time.Duration(float64(rateLimitBase) * math.Pow(2, float64(attempt-1)))
 				if ra := retryAfterDelay(resp); ra > 0 && ra <= 60*time.Second {
 					delay = ra
+				}
+				if delay > maxDelay {
+					delay = maxDelay
 				}
 			}
 			log.Printf("provider: retrying request (attempt %d/%d, waiting %v)", attempt, maxRetries, delay)
