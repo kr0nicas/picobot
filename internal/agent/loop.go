@@ -149,7 +149,11 @@ func (a *AgentLoop) Run(ctx context.Context) {
 				resp, err := a.provider.Chat(ctx, messages, toolDefs, a.model)
 				if err != nil {
 					log.Printf("provider error: %v", err)
-					finalContent = "Sorry, I encountered an error while processing your request."
+					if strings.Contains(err.Error(), "429") {
+						finalContent = "I'm being rate-limited by the AI provider. Please try again in a minute."
+					} else {
+						finalContent = "Sorry, I encountered an error while processing your request."
+					}
 					break
 				}
 
@@ -177,6 +181,12 @@ func (a *AgentLoop) Run(ctx context.Context) {
 				finalContent = lastToolResult
 			} else if finalContent == "" {
 				finalContent = "I've completed processing but have no response to give."
+			}
+
+			// For heartbeat messages, don't send error replies back to avoid noise
+			if msg.Channel == "heartbeat" && strings.Contains(finalContent, "rate-limited") {
+				log.Println("heartbeat: suppressing rate-limit error reply")
+				continue
 			}
 
 			// Save session
