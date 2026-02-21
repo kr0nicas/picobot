@@ -19,7 +19,7 @@ func DefaultConfig() Config {
 			MaxTokens:          8192,
 			Temperature:        0.7,
 			MaxToolIterations:  100,
-			HeartbeatIntervalS: 60,
+			HeartbeatIntervalS: 300,
 			RequestTimeoutS:    60,
 		}},
 		Channels: ChannelsConfig{Telegram: TelegramConfig{Enabled: false, Token: "", AllowFrom: []string{}}},
