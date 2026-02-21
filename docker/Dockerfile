@@ -27,21 +27,28 @@ RUN set -eux; \
 # ---- Runtime Stage ----
 FROM alpine:3.20
 
+# 1. Install system dependencies (Adding build-base for some Python C-extensions)
 RUN apk add --no-cache \
     ca-certificates tzdata bash curl wget \
     jq git openssh-client python3 py3-pip py3-requests \
-    bind-tools iputils iproute2 net-tools
+    bind-tools iputils iproute2 net-tools build-base python3-dev
 
-# Allow pip to install packages system-wide and pre-install supabase SDK
-RUN pip3 install --no-cache-dir --break-system-packages supabase
-
-# Create non-root user
+# 2. Create non-root user FIRST
 RUN addgroup -S picobot && adduser -S picobot -G picobot
 
-# Picobot home directory (config + workspace live here)
+# 3. Setup Python Environment and permissions
+# We install supabase globally BUT ensure the site-packages are readable by everyone
+RUN set -eux; \
+    pip3 install --no-cache-dir --break-system-packages supabase psutil postgrest; \
+    # Ensure site-packages are readable by the picobot user
+    find /usr/lib/python3* -type d -exec chmod 755 {} +; \
+    find /usr/lib/python3* -type f -exec chmod 644 {} +
+
+# 4. Picobot home directory (config + workspace live here)
 ENV PICOBOT_HOME=/home/picobot/.picobot
-# Allow agent to install tools in its workspace bin
-ENV PATH="/home/picobot/.picobot/bin:${PATH}"
+# Adding local user bin to PATH so 'pip install --user' tools work
+ENV PATH="/home/picobot/.picobot/bin:/home/picobot/.local/bin:${PATH}"
+
 RUN mkdir -p ${PICOBOT_HOME}/bin && chown -R picobot:picobot /home/picobot
 
 COPY --from=builder /picobot /usr/local/bin/picobot
@@ -50,11 +57,9 @@ RUN chmod +x /usr/local/bin/picobot
 USER picobot
 WORKDIR /home/picobot
 
-# Allow the non-root user to pip install packages at runtime
+# 5. Allow picobot user to install its own tools without sudo
 RUN pip3 config --user set global.break-system-packages true
 
-# Run onboard on first start to create config + workspace,
-# then start the gateway. The entrypoint script handles this.
 COPY --chown=picobot:picobot docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
