@@ -64,15 +64,9 @@ var dangerous = map[string]struct{}{
 	"bash":     {},
 	"sh":       {},
 	"zsh":      {},
-	"python":   {},
-	"python3":  {},
-	"perl":     {},
-	"ruby":     {},
 	"nc":       {},
 	"netcat":   {},
 	"nmap":     {},
-	"curl":     {},
-	"wget":     {},
 }
 
 func isDangerousProg(prog string) bool {
