@@ -76,6 +76,22 @@ func isDangerousProg(prog string) bool {
 	return ok
 }
 
+// isInterpreter returns true for programs that accept -c with inline source code.
+var interpreters = map[string]struct{}{
+	"python":  {},
+	"python3": {},
+	"perl":    {},
+	"ruby":    {},
+	"node":    {},
+}
+
+func isInterpreter(prog string) bool {
+	base := filepath.Base(prog)
+	base = strings.ToLower(base)
+	_, ok := interpreters[base]
+	return ok
+}
+
 func hasUnsafeArg(s string) bool {
 	// A more aggressive check: reject any arg containing path separators,
 	// home expansion or parent directory references anywhere.
@@ -126,7 +142,19 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]interface{}) (st
 	if isDangerousProg(prog) {
 		return "", fmt.Errorf("exec: program '%s' is disallowed", prog)
 	}
-	for _, a := range argv[1:] {
+
+	// When using an interpreter with -c, the code argument is not a shell
+	// argument — it's source code passed directly to the interpreter.
+	// Skip unsafe-arg checks for that single code argument.
+	skipIdx := -1
+	if isInterpreter(prog) && len(argv) >= 3 && argv[1] == "-c" {
+		skipIdx = 2
+	}
+
+	for i, a := range argv[1:] {
+		if i+1 == skipIdx {
+			continue
+		}
 		if hasUnsafeArg(a) {
 			return "", fmt.Errorf("exec: argument '%s' looks unsafe", a)
 		}
