@@ -143,17 +143,24 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]interface{}) (st
 		return "", fmt.Errorf("exec: program '%s' is disallowed", prog)
 	}
 
-	// When using an interpreter with -c, the code argument is not a shell
-	// argument — it's source code passed directly to the interpreter.
-	// Skip unsafe-arg checks for that single code argument.
-	skipIdx := -1
-	if isInterpreter(prog) && len(argv) >= 3 && argv[1] == "-c" {
-		skipIdx = 2
-	}
+	// When using an interpreter, relax argument validation:
+	// - With -c: the code argument can contain any characters (it's source code).
+	// - Without -c: the first argument is a script path — allow relative paths
+	//   (containing /) as long as they don't escape with "..".
+	interpreterMode := isInterpreter(prog)
 
 	for i, a := range argv[1:] {
-		if i+1 == skipIdx {
-			continue
+		idx := i + 1 // index in argv
+		if interpreterMode {
+			// Skip validation for the code string after -c
+			if idx >= 2 && len(argv) >= 3 && argv[1] == "-c" && idx == 2 {
+				continue
+			}
+			// Allow relative script paths (e.g. ./script.py, skills/monitor.py)
+			// but reject directory traversal
+			if idx == 1 && a != "-c" && !strings.Contains(a, "..") && !strings.HasPrefix(a, "/") {
+				continue
+			}
 		}
 		if hasUnsafeArg(a) {
 			return "", fmt.Errorf("exec: argument '%s' looks unsafe", a)
