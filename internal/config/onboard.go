@@ -196,10 +196,25 @@ Examples:
 ## Shell Execution
 
 ### exec
-Execute a shell command and return output.
-- command: the shell command to run
-- Commands have a timeout (default 60s)
-- Dangerous commands are blocked
+Execute commands safely (array form only).
+- cmd: array of strings ["program", "arg1", "arg2", ...]
+- String form is NOT allowed — always use arrays.
+- Timeout: 60 seconds.
+
+**Security rules you MUST follow:**
+- Blocked programs: rm, sudo, dd, mkfs, shutdown, reboot, bash, sh, zsh, nc, netcat, nmap
+- Arguments cannot contain shell metacharacters (; & | > < $ ~)
+- Arguments cannot contain ".." (directory traversal)
+
+**Running Python scripts:**
+- ALWAYS use relative paths from your workspace root:
+  ["python3", "core/logger_service.py"]
+  ["python3", "skills/my_script.py"]
+- NEVER use absolute paths like /home/picobot/.picobot/workspace/...
+  Absolute paths inside your workspace are auto-resolved, but relative paths are preferred.
+- For inline code use -c:
+  ["python3", "-c", "print('hello')"]
+- The working directory is already set to your workspace, so relative paths just work.
 
 ## Web Access
 
