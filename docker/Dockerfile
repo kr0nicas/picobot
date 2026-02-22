@@ -25,43 +25,42 @@ RUN set -eux; \
     go build -ldflags="-s -w" -o /picobot ./cmd/picobot
 
 # ---- Runtime Stage (Debian Slim — glibc, compatible con wheels Python) ----
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 # 1. Herramientas de sistema + gosu para drop de privilegios
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates tzdata bash curl wget jq git \
-    openssh-client dnsutils iputils-ping iproute2 net-tools \
-    libffi-dev build-essential gosu \
+    ca-certificates tzdata bash curl wget jq git openssh-client \
+    dnsutils iputils-ping iproute2 net-tools procps \
+    build-essential libffi-dev gosu \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. UV (fast Python package manager)
+# 2. UV
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# 3. Usuario no-root
-RUN groupadd picobot && useradd -g picobot -m picobot
+# 3. Usuario no-root (sin -r para que -m cree el home)
+RUN groupadd picobot && useradd -g picobot -m -s /bin/bash picobot
 
+# 4. Configuración de entorno
 ENV PICOBOT_HOME=/home/picobot/.picobot
 ENV UV_CACHE_DIR=/home/picobot/.cache/uv
-ENV PATH="/home/picobot/.picobot/bin:/home/picobot/.local/bin:${PATH}"
-
-RUN mkdir -p ${PICOBOT_HOME}/bin && chown -R picobot:picobot /home/picobot
-
-# 4. Binario de picobot
-COPY --from=builder /picobot /usr/local/bin/picobot
-RUN chmod +x /usr/local/bin/picobot
+ENV VIRTUAL_ENV=/home/picobot/venv
+ENV PATH="/home/picobot/venv/bin:/home/picobot/.local/bin:${PICOBOT_HOME}/bin:${PATH}"
 
 WORKDIR /home/picobot
 
-# 5. Venv global activado por defecto
-RUN uv venv /home/picobot/venv && chown -R picobot:picobot /home/picobot/venv
-ENV VIRTUAL_ENV=/home/picobot/venv
-ENV PATH="/home/picobot/venv/bin:$PATH"
-
-# 6. Pre-instalar paquetes base
-RUN uv pip install \
+# 5. Venv global + dependencias core
+RUN uv venv /home/picobot/venv && \
+    uv pip install --no-cache \
     supabase psutil postgrest \
     feedparser beautifulsoup4 requests lxml pandas \
     httpx selectolax
+
+# 6. Permisos
+RUN mkdir -p ${PICOBOT_HOME}/bin && chown -R picobot:picobot /home/picobot
+
+# 7. Binarios y entrypoint
+COPY --from=builder /picobot /usr/local/bin/picobot
+RUN chmod +x /usr/local/bin/picobot
 
 COPY --chown=picobot:picobot docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
