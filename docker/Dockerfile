@@ -24,44 +24,45 @@ RUN set -eux; \
     CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" ${GOARM:+GOARM=$GOARM} \
     go build -ldflags="-s -w" -o /picobot ./cmd/picobot
 
-# ---- Runtime Stage ----
-FROM alpine:3.20
+# ---- Runtime Stage (Debian Slim — glibc, compatible con wheels Python) ----
+FROM python:3.12-slim
 
-# 1. Install system dependencies (Adding build-base for some Python C-extensions)
-RUN apk add --no-cache \
-    ca-certificates tzdata bash curl wget \
-    jq git openssh-client python3 py3-pip py3-requests \
-    bind-tools iputils iproute2 net-tools build-base python3-dev
+# 1. Herramientas de sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates tzdata bash curl wget jq git \
+    openssh-client dnsutils iputils-ping iproute2 net-tools \
+    libffi-dev build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# 2. Create non-root user FIRST
-RUN addgroup -S picobot && adduser -S picobot -G picobot
-
-# 3. Install uv (fast Python package manager) and global Python packages
+# 2. UV (fast Python package manager)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-RUN set -eux; \
-    pip3 install --no-cache-dir --break-system-packages \
-        supabase psutil postgrest \
-        feedparser beautifulsoup4 requests lxml pandas; \
-    # Ensure site-packages are readable by the picobot user
-    find /usr/lib/python3* -type d -exec chmod 755 {} +; \
-    find /usr/lib/python3* -type f -exec chmod 644 {} +
 
-# 4. Picobot home directory (config + workspace live here)
+# 3. Usuario no-root
+RUN groupadd -r picobot && useradd -r -g picobot -m picobot
+
 ENV PICOBOT_HOME=/home/picobot/.picobot
 ENV UV_CACHE_DIR=/home/picobot/.cache/uv
-# Adding local user bin, uv venvs, and pip user bin to PATH
 ENV PATH="/home/picobot/.picobot/bin:/home/picobot/.local/bin:${PATH}"
 
 RUN mkdir -p ${PICOBOT_HOME}/bin && chown -R picobot:picobot /home/picobot
 
+# 4. Binario de picobot
 COPY --from=builder /picobot /usr/local/bin/picobot
 RUN chmod +x /usr/local/bin/picobot
 
 USER picobot
 WORKDIR /home/picobot
 
-# 5. Allow picobot user to install its own tools without sudo
-RUN pip3 config --user set global.break-system-packages true
+# 5. Venv global activado por defecto
+RUN uv venv /home/picobot/venv
+ENV VIRTUAL_ENV=/home/picobot/venv
+ENV PATH="/home/picobot/venv/bin:$PATH"
+
+# 6. Pre-instalar paquetes base
+RUN uv pip install \
+    supabase psutil postgrest \
+    feedparser beautifulsoup4 requests lxml pandas \
+    httpx selectolax
 
 COPY --chown=picobot:picobot docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
