@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -63,6 +64,24 @@ func TestExecPipAllowed(t *testing.T) {
 	// We don't care if pip3 is actually installed; we only check that it wasn't rejected by the sandbox.
 	if err != nil && (err.Error() == "exec: argument '--user' looks unsafe" || err.Error() == "exec: argument 'install' looks unsafe") {
 		t.Fatalf("pip3 arguments should not be rejected by sandbox: %v", err)
+	}
+}
+
+func TestExecUvAllowed(t *testing.T) {
+	e := NewExecTool(5)
+	// uv with pip install --system should not be rejected by sandbox
+	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"uv", "pip", "install", "--system", "requests"}})
+	if err != nil && strings.Contains(err.Error(), "looks unsafe") {
+		t.Fatalf("uv arguments should not be rejected by sandbox: %v", err)
+	}
+}
+
+func TestExecUvVenvAllowed(t *testing.T) {
+	e := NewExecTool(5)
+	// uv venv with a path containing / should be allowed for package managers
+	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"uv", "venv", "venvs/my-project"}})
+	if err != nil && strings.Contains(err.Error(), "looks unsafe") {
+		t.Fatalf("uv venv path should not be rejected by sandbox: %v", err)
 	}
 }
 

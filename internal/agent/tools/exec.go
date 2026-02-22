@@ -97,6 +97,7 @@ func isInterpreter(prog string) bool {
 var packageManagers = map[string]struct{}{
 	"pip":  {},
 	"pip3": {},
+	"uv":   {},
 }
 
 func isPackageManager(prog string) bool {

@@ -119,11 +119,12 @@ Never create files directly in the workspace root. Always use a project folder.
 
 ## Package Management
 
-- You can install Python packages using pip3 or pip directly.
-- Use: exec with ["pip3", "install", "--user", "package-name"]
-- Installed packages will be available immediately for import in Python scripts.
-- Prefer --user flag to install packages in your user space.
-- You can also use --break-system-packages if --user is not sufficient.
+- You have **uv** installed — a fast Python package manager. Use it as your primary tool.
+- For isolated environments: exec with ["uv", "venv", "venvs/my-project"]
+- To install packages: exec with ["uv", "pip", "install", "package-name", "--python", "venvs/my-project"]
+- For quick global installs: exec with ["uv", "pip", "install", "--system", "package-name"]
+- You can also use pip3 directly: ["pip3", "install", "--user", "package-name"]
+- Read NEW_POWER.md in your workspace for full documentation on uv usage.
 
 ## Safety
 
@@ -247,6 +248,84 @@ Spawn a background subagent process.
 
 ### cron
 Schedule or manage cron jobs.
+`,
+
+		"NEW_POWER.md": `# NEW_POWER — Guía de uv para Gio
+
+Tienes instalado **uv**, un gestor de paquetes Python ultrarrápido escrito en Rust.
+Ya no dependes únicamente de pip. Esto te da control total sobre entornos y dependencias.
+
+## Comandos Disponibles
+
+### Instalar un paquete rápido (global)
+
+` + "```" + `
+exec: ["uv", "pip", "install", "--system", "nombre-del-paquete"]
+` + "```" + `
+
+Esto instala el paquete en el Python del sistema. Úsalo para herramientas que necesitas
+disponibles en cualquier script sin activar un entorno.
+
+### Crear un entorno virtual aislado
+
+` + "```" + `
+exec: ["uv", "venv", "venvs/mi-proyecto"]
+` + "```" + `
+
+Crea un entorno en la carpeta venvs/mi-proyecto dentro de tu workspace.
+Cada proyecto puede tener sus propias dependencias sin conflictos.
+
+### Instalar paquetes en un entorno virtual
+
+` + "```" + `
+exec: ["uv", "pip", "install", "pandas", "requests", "--python", "venvs/mi-proyecto/bin/python"]
+` + "```" + `
+
+### Ejecutar un script con el entorno virtual
+
+` + "```" + `
+exec: ["venvs/mi-proyecto/bin/python", "scripts/mi_script.py"]
+` + "```" + `
+
+### Listar paquetes instalados
+
+` + "```" + `
+exec: ["uv", "pip", "list", "--system"]
+` + "```" + `
+
+O dentro de un venv:
+
+` + "```" + `
+exec: ["uv", "pip", "list", "--python", "venvs/mi-proyecto/bin/python"]
+` + "```" + `
+
+### Desinstalar un paquete
+
+` + "```" + `
+exec: ["uv", "pip", "uninstall", "nombre-del-paquete", "--system"]
+` + "```" + `
+
+## Cuándo usar cada método
+
+| Situación | Método |
+|-----------|--------|
+| Paquete que usas en muchos scripts | --system (global) |
+| Proyecto con dependencias específicas | venv aislado |
+| Prueba rápida de una librería | --system y luego desinstala si no sirve |
+| Conflicto de versiones entre proyectos | Un venv por proyecto |
+
+## Paquetes Pre-instalados
+
+Los siguientes paquetes ya están disponibles sin instalar nada:
+- supabase, psutil, postgrest
+- feedparser, beautifulsoup4, requests, lxml, pandas
+
+## Notas Importantes
+
+- **No necesitas sudo** — todo corre como usuario picobot.
+- **uv es 10-100x más rápido que pip** — las instalaciones son casi instantáneas.
+- Los venvs viven en tu workspace, así que persisten entre reinicios del contenedor.
+- Si un paquete ya está pre-instalado globalmente, no necesitas reinstalarlo.
 `,
 
 		"HEARTBEAT.md": `# Heartbeat

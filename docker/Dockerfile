@@ -36,8 +36,8 @@ RUN apk add --no-cache \
 # 2. Create non-root user FIRST
 RUN addgroup -S picobot && adduser -S picobot -G picobot
 
-# 3. Setup Python Environment and permissions
-# We install supabase globally BUT ensure the site-packages are readable by everyone
+# 3. Install uv (fast Python package manager) and global Python packages
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 RUN set -eux; \
     pip3 install --no-cache-dir --break-system-packages \
         supabase psutil postgrest \
@@ -48,7 +48,8 @@ RUN set -eux; \
 
 # 4. Picobot home directory (config + workspace live here)
 ENV PICOBOT_HOME=/home/picobot/.picobot
-# Adding local user bin to PATH so 'pip install --user' tools work
+ENV UV_CACHE_DIR=/home/picobot/.cache/uv
+# Adding local user bin, uv venvs, and pip user bin to PATH
 ENV PATH="/home/picobot/.picobot/bin:/home/picobot/.local/bin:${PATH}"
 
 RUN mkdir -p ${PICOBOT_HOME}/bin && chown -R picobot:picobot /home/picobot
