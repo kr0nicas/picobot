@@ -39,7 +39,9 @@ RUN addgroup -S picobot && adduser -S picobot -G picobot
 # 3. Setup Python Environment and permissions
 # We install supabase globally BUT ensure the site-packages are readable by everyone
 RUN set -eux; \
-    pip3 install --no-cache-dir --break-system-packages supabase psutil postgrest; \
+    pip3 install --no-cache-dir --break-system-packages \
+        supabase psutil postgrest \
+        feedparser beautifulsoup4 requests lxml pandas; \
     # Ensure site-packages are readable by the picobot user
     find /usr/lib/python3* -type d -exec chmod 755 {} +; \
     find /usr/lib/python3* -type f -exec chmod 644 {} +

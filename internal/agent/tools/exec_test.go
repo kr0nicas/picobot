@@ -56,6 +56,24 @@ func TestExecRejectsUnsafeArg(t *testing.T) {
 	}
 }
 
+func TestExecPipAllowed(t *testing.T) {
+	e := NewExecTool(5)
+	// pip3 with --user and package name should be allowed (args contain - and flags)
+	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"pip3", "install", "--user", "requests"}})
+	// We don't care if pip3 is actually installed; we only check that it wasn't rejected by the sandbox.
+	if err != nil && (err.Error() == "exec: argument '--user' looks unsafe" || err.Error() == "exec: argument 'install' looks unsafe") {
+		t.Fatalf("pip3 arguments should not be rejected by sandbox: %v", err)
+	}
+}
+
+func TestExecPipRejectsTraversal(t *testing.T) {
+	e := NewExecTool(2)
+	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"pip3", "install", "--target", "../escape"}})
+	if err == nil {
+		t.Fatalf("expected error for directory traversal in pip args")
+	}
+}
+
 func TestExecTimeout(t *testing.T) {
 	e := NewExecTool(1)
 	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"sleep", "2"}})

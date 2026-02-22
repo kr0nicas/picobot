@@ -117,6 +117,14 @@ Never create files directly in the workspace root. Always use a project folder.
 - Skills are reusable knowledge/procedures stored in skills/.
 - List available skills with list_skills before creating duplicates.
 
+## Package Management
+
+- You can install Python packages using pip3 or pip directly.
+- Use: exec with ["pip3", "install", "--user", "package-name"]
+- Installed packages will be available immediately for import in Python scripts.
+- Prefer --user flag to install packages in your user space.
+- You can also use --break-system-packages if --user is not sufficient.
+
 ## Safety
 
 - Never execute dangerous commands (rm -rf, format, dd, shutdown, mkfs).

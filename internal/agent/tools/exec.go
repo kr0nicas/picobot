@@ -92,6 +92,20 @@ func isInterpreter(prog string) bool {
 	return ok
 }
 
+// isPackageManager returns true for package managers whose arguments
+// (package names, flags like --user, --break-system-packages) are safe.
+var packageManagers = map[string]struct{}{
+	"pip":  {},
+	"pip3": {},
+}
+
+func isPackageManager(prog string) bool {
+	base := filepath.Base(prog)
+	base = strings.ToLower(base)
+	_, ok := packageManagers[base]
+	return ok
+}
+
 func hasUnsafeArg(s string) bool {
 	// A more aggressive check: reject any arg containing path separators,
 	// home expansion or parent directory references anywhere.
@@ -149,8 +163,19 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]interface{}) (st
 	//   (containing /) as long as they don't escape with "..".
 	interpreterMode := isInterpreter(prog)
 
+	// Package managers (pip/pip3): allow all arguments through.
+	// They need flags like --user, --break-system-packages and package names.
+	pkgMgrMode := isPackageManager(prog)
+
 	for i, a := range argv[1:] {
 		idx := i + 1 // index in argv
+		if pkgMgrMode {
+			// Only reject directory traversal for safety
+			if strings.Contains(a, "..") {
+				return "", fmt.Errorf("exec: argument '%s' looks unsafe", a)
+			}
+			continue
+		}
 		if interpreterMode {
 			// Skip validation for the code string after -c
 			if idx >= 2 && len(argv) >= 3 && argv[1] == "-c" && idx == 2 {
