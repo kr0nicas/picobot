@@ -27,18 +27,18 @@ RUN set -eux; \
 # ---- Runtime Stage (Debian Slim — glibc, compatible con wheels Python) ----
 FROM python:3.12-slim
 
-# 1. Herramientas de sistema
+# 1. Herramientas de sistema + gosu para drop de privilegios
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates tzdata bash curl wget jq git \
     openssh-client dnsutils iputils-ping iproute2 net-tools \
-    libffi-dev build-essential \
+    libffi-dev build-essential gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. UV (fast Python package manager)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # 3. Usuario no-root
-RUN groupadd -r picobot && useradd -r -g picobot -m picobot
+RUN groupadd picobot && useradd -g picobot -m picobot
 
 ENV PICOBOT_HOME=/home/picobot/.picobot
 ENV UV_CACHE_DIR=/home/picobot/.cache/uv
@@ -50,11 +50,10 @@ RUN mkdir -p ${PICOBOT_HOME}/bin && chown -R picobot:picobot /home/picobot
 COPY --from=builder /picobot /usr/local/bin/picobot
 RUN chmod +x /usr/local/bin/picobot
 
-USER picobot
 WORKDIR /home/picobot
 
 # 5. Venv global activado por defecto
-RUN uv venv /home/picobot/venv
+RUN uv venv /home/picobot/venv && chown -R picobot:picobot /home/picobot/venv
 ENV VIRTUAL_ENV=/home/picobot/venv
 ENV PATH="/home/picobot/venv/bin:$PATH"
 

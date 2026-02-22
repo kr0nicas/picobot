@@ -3,8 +3,6 @@ services:
     image: ghcr.io/kr0nicas/picobot:latest
     container_name: gio_agente
     restart: unless-stopped
-    # CentOS/Linux permission fix
-    user: "${UID}:${GID}"
     deploy:
       resources:
         limits:

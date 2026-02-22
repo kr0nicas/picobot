@@ -3,6 +3,15 @@ set -e
 
 PICOBOT_HOME="${PICOBOT_HOME:-/home/picobot/.picobot}"
 
+# If running as root, fix volume permissions and re-exec as picobot
+if [ "$(id -u)" = "0" ]; then
+  mkdir -p "${PICOBOT_HOME}/bin" "${PICOBOT_HOME}/workspace" /home/picobot/.cache/uv
+  chown -R picobot:picobot /home/picobot
+  exec gosu picobot "$0" "$@"
+fi
+
+# --- From here on we are picobot ---
+
 # Auto-onboard if config doesn't exist yet
 if [ ! -f "${PICOBOT_HOME}/config.json" ]; then
   echo "First run detected — running onboard..."
@@ -34,7 +43,6 @@ fi
 if [ -n "${TELEGRAM_BOT_TOKEN}" ]; then
   echo "Applying TELEGRAM_BOT_TOKEN from environment..."
   TMP=$(mktemp)
-  # Enable telegram and set token using sed
   cat "${PICOBOT_HOME}/config.json" | \
     sed 's|"enabled": false|"enabled": true|g' | \
     sed "s|\"token\": \"\"|\"token\": \"${TELEGRAM_BOT_TOKEN}\"|g" > "$TMP" && \
@@ -44,8 +52,7 @@ fi
 if [ -n "${TELEGRAM_ALLOW_FROM}" ]; then
   echo "Applying TELEGRAM_ALLOW_FROM from environment..."
   TMP=$(mktemp)
-  # Convert comma-separated IDs to JSON array: "id1,id2" -> ["id1","id2"]
-  ALLOW_JSON=$(echo "${TELEGRAM_ALLOW_FROM}" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/') 
+  ALLOW_JSON=$(echo "${TELEGRAM_ALLOW_FROM}" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
   cat "${PICOBOT_HOME}/config.json" | \
     sed "s/\"allowFrom\": null/\"allowFrom\": ${ALLOW_JSON}/g" | \
     sed "s/\"allowFrom\": \[\]/\"allowFrom\": ${ALLOW_JSON}/g" > "$TMP" && \
