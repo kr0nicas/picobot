@@ -93,6 +93,17 @@ func TestExecPipRejectsTraversal(t *testing.T) {
 	}
 }
 
+func TestExecUvRunPipRejected(t *testing.T) {
+	e := NewExecTool(5)
+	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"uv", "run", "pip", "install", "requests"}})
+	if err == nil {
+		t.Fatalf("expected error for 'uv run pip install'")
+	}
+	if !strings.Contains(err.Error(), "wrong syntax") {
+		t.Fatalf("expected 'wrong syntax' error, got: %v", err)
+	}
+}
+
 func TestExecTimeout(t *testing.T) {
 	e := NewExecTool(1)
 	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"sleep", "2"}})

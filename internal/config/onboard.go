@@ -125,6 +125,7 @@ Never create files directly in the workspace root. Always use a project folder.
 - For quick global installs: exec with ["uv", "pip", "install", "--system", "package-name"]
 - You can also use pip3 directly: ["pip3", "install", "--user", "package-name"]
 - Read NEW_POWER.md in your workspace for full documentation on uv usage.
+- **CRITICAL: NEVER use "uv run pip install". The correct command is "uv pip install". The "run" subcommand is for running scripts, NOT for pip.**
 
 ## Safety
 
@@ -205,6 +206,10 @@ Execute commands safely (array form only).
 - Blocked programs: rm, sudo, dd, mkfs, shutdown, reboot, bash, sh, zsh, nc, netcat, nmap
 - Arguments cannot contain shell metacharacters (; & | > < $ ~)
 - Arguments cannot contain ".." (directory traversal)
+
+**IMPORTANT uv syntax:**
+- Correct: ["uv", "pip", "install", "package"]
+- WRONG:   ["uv", "run", "pip", "install", "package"]  ← "uv run" is for scripts, NOT pip!
 
 **Running Python scripts:**
 - ALWAYS use relative paths from your workspace root:
@@ -337,6 +342,7 @@ Los siguientes paquetes ya están disponibles sin instalar nada:
 
 ## Notas Importantes
 
+- **NUNCA uses "uv run pip install"** — eso es sintaxis incorrecta. Siempre usa **"uv pip install"**.
 - **No necesitas sudo** — todo corre como usuario picobot.
 - **uv es 10-100x más rápido que pip** — las instalaciones son casi instantáneas.
 - Los venvs viven en tu workspace, así que persisten entre reinicios del contenedor.

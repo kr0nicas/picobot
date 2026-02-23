@@ -158,6 +158,13 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]interface{}) (st
 		return "", fmt.Errorf("exec: program '%s' is disallowed", prog)
 	}
 
+	// Catch common LLM hallucination: "uv run pip install ..."
+	// The correct syntax is "uv pip install ...", not "uv run pip install ...".
+	if strings.ToLower(filepath.Base(prog)) == "uv" && len(argv) >= 3 &&
+		argv[1] == "run" && argv[2] == "pip" {
+		return "", fmt.Errorf("exec: wrong syntax 'uv run pip install'. Use [\"uv\", \"pip\", \"install\", ...] instead")
+	}
+
 	// When using an interpreter, relax argument validation:
 	// - With -c: the code argument can contain any characters (it's source code).
 	// - Without -c: the first argument is a script path — allow relative paths
