@@ -192,25 +192,22 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]interface{}) (st
 			continue
 		}
 		if interpreterMode {
-			// Skip validation for the code string after -c
-			if idx >= 2 && len(argv) >= 3 && argv[1] == "-c" && idx == 2 {
-				continue
+			// All interpreter arguments are allowed (script args may contain
+			// free-form text like log messages with special characters).
+			// Only reject directory traversal in the script path itself.
+			if idx == 1 && strings.Contains(a, "..") {
+				return "", fmt.Errorf("exec: argument '%s' looks unsafe", a)
 			}
-			// Allow script paths (first arg when not -c):
-			// - Relative paths are allowed as-is (e.g. ./script.py, skills/monitor.py)
-			// - Absolute paths inside the allowed workspace are converted to relative
-			// - Reject directory traversal (..) in all cases
-			if idx == 1 && a != "-c" && !strings.Contains(a, "..") {
-				if strings.HasPrefix(a, "/") && t.allowedDir != "" {
-					rel, err := filepath.Rel(t.allowedDir, a)
-					if err == nil && !strings.HasPrefix(rel, "..") {
-						argv[idx] = rel
-					} else {
-						return "", fmt.Errorf("exec: script path '%s' is outside workspace", a)
-					}
+			// Auto-resolve absolute script paths inside workspace
+			if idx == 1 && strings.HasPrefix(a, "/") && t.allowedDir != "" {
+				rel, err := filepath.Rel(t.allowedDir, a)
+				if err == nil && !strings.HasPrefix(rel, "..") {
+					argv[idx] = rel
+				} else {
+					return "", fmt.Errorf("exec: script path '%s' is outside workspace", a)
 				}
-				continue
 			}
+			continue
 		}
 		if hasUnsafeArg(a) {
 			return "", fmt.Errorf("exec: argument '%s' looks unsafe", a)
