@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -34,7 +33,7 @@ func NewExecToolWithWorkspace(timeoutSecs int, allowedDir string) *ExecTool {
 
 func (t *ExecTool) Name() string { return "exec" }
 func (t *ExecTool) Description() string {
-	return "Execute shell commands (array form only, restricted for safety)"
+	return "Execute shell commands (array or string form, restricted for safety)"
 }
 
 func (t *ExecTool) Parameters() map[string]interface{} {
@@ -42,12 +41,18 @@ func (t *ExecTool) Parameters() map[string]interface{} {
 		"type": "object",
 		"properties": map[string]interface{}{
 			"cmd": map[string]interface{}{
-				"type":        "array",
-				"description": "Command as array [program, arg1, arg2, ...]. String form is disallowed for security.",
-				"items": map[string]interface{}{
-					"type": "string",
+				"oneOf": []map[string]interface{}{
+					{
+						"type":        "array",
+						"description": "Command as array [program, arg1, arg2, ...]",
+						"items": map[string]interface{}{"type": "string"},
+						"minItems":    1,
+					},
+					{
+						"type":        "string",
+						"description": "Command as string, e.g. \"ls -la\"",
+					},
 				},
-				"minItems": 1,
 			},
 		},
 		"required": []string{"cmd"},
@@ -111,7 +116,7 @@ func hasUnsafeArg(s string) bool {
 	// A more aggressive check: reject any arg containing path separators,
 	// home expansion or parent directory references anywhere.
 	// We also reject shell characters that could be used for chaining.
-	if strings.Contains(s, "/") || strings.Contains(s, "..") || strings.Contains(s, "~") {
+	if strings.Contains(s, "..") || strings.Contains(s, "~") {
 		return true
 	}
 	// Reject common shell meta-characters that might bypass the array-only restriction
@@ -131,13 +136,15 @@ func (t *ExecTool) Execute(ctx context.Context, args map[string]interface{}) (st
 		return "", fmt.Errorf("exec: 'cmd' argument required")
 	}
 
-	// Disallow shell-string commands for safety
-	if _, ok := cmdRaw.(string); ok {
-		return "", errors.New("exec: string commands are disallowed; use array form")
-	}
-
 	var argv []string
 	switch v := cmdRaw.(type) {
+	case string:
+		// Allow string form: split by whitespace into argv.
+		parts := strings.Fields(v)
+		if len(parts) == 0 {
+			return "", fmt.Errorf("exec: empty cmd string")
+		}
+		argv = parts
 	case []interface{}:
 		if len(v) == 0 {
 			return "", fmt.Errorf("exec: empty cmd array")

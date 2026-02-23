@@ -19,11 +19,14 @@ func TestExecArrayEcho(t *testing.T) {
 	}
 }
 
-func TestExecStringDisallowed(t *testing.T) {
+func TestExecStringAllowed(t *testing.T) {
 	e := NewExecTool(2)
-	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": "ls -la"})
-	if err == nil {
-		t.Fatalf("expected error for string command")
+	out, err := e.Execute(context.Background(), map[string]interface{}{"cmd": "echo hello"})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if out != "hello" {
+		t.Fatalf("unexpected out: %s", out)
 	}
 }
 
@@ -49,11 +52,21 @@ func TestExecWithWorkspace(t *testing.T) {
 	}
 }
 
-func TestExecRejectsUnsafeArg(t *testing.T) {
+func TestExecAllowsPathArg(t *testing.T) {
 	e := NewExecTool(2)
+	// Paths with / should now be allowed
 	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"ls", "/etc"}})
+	// We only check it's not rejected by the unsafe arg check
+	if err != nil && strings.Contains(err.Error(), "looks unsafe") {
+		t.Fatalf("path args should not be rejected: %v", err)
+	}
+}
+
+func TestExecRejectsTraversalArg(t *testing.T) {
+	e := NewExecTool(2)
+	_, err := e.Execute(context.Background(), map[string]interface{}{"cmd": []interface{}{"ls", "../secret"}})
 	if err == nil {
-		t.Fatalf("expected error for absolute path arg")
+		t.Fatalf("expected error for directory traversal arg")
 	}
 }
 
